@@ -1,7 +1,7 @@
 import axios, { Axios, AxiosError, AxiosRequestConfig } from 'axios'
 import { NextApiHandler, NextApiResponse } from 'next';
 import { QueryClient, QueryFunctionContext, useMutation, UseMutationOptions, UseMutationResult, useQuery, useQueryClient, UseQueryOptions } from 'react-query'
-import { queryHookFn, NextMethod, PrefetchFn, useQueryFnType, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, HookFnReturnExt, queryHookReturnType, useMutationOptsExt, useMutationOpts, getError, successFn, failFn, DefaultError, queryHookOpts } from './types'
+import { queryHookFn, NextMethod, PrefetchFn, useQueryFnType, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, HookFnReturnExt, queryHookReturnType, useMutationOptsExt, useMutationOpts, getError, successFn, failFn, DefaultError, queryHookOpts, IfHasMethod } from './types'
 
 let isServer = (typeof window === 'undefined') ? true : false;
 
@@ -49,33 +49,36 @@ type FetchFromBase<Base extends MethodNextHandlerBase, Method extends METHODS> =
 type useMutationType<Base extends MethodNextHandlerBase, Method extends METHODS> =
   useMutationFn<getType<Base[Method]>, getParam<Base[Method]>, getError<Base[Method]>>
 
+type methodsCallerExt< H extends NextMethodsHandler<any> > = {}
+  & IfHasMethod<H, 'GET', { get: FetchFromBase<H, "GET"> }>
+  & IfHasMethod<H, 'PUT', { put: FetchFromBase<H, "PUT"> }>
+  & IfHasMethod<H, 'POST', { post: FetchFromBase<H, "POST"> }>
+  & IfHasMethod<H, 'DELETE', { delete: FetchFromBase<H, "DELETE"> }>
+
+type hooksCallerExt< H extends NextMethodsHandler<any> > = {}
+  & IfHasMethod<H, 'GET',  { 
+    useGet: queryObjectHookFn<getType<H['GET']>, getParam<H['GET']>>,
+    prefetch: PrefetchFn<getParam<H['GET']>>
+  }>
+  & IfHasMethod<H, 'PUT',  { usePut: useMutationType<H, "PUT">, }>
+  & IfHasMethod<H, 'POST',  { usePost: useMutationType<H, "POST">, }>
+  & IfHasMethod<H, 'DELETE',  { useDelete: useMutationType<H, "DELETE">, }>
+
 const createHandler: <
   Handler extends NextMethodsHandler<any> = NextMethodsHandler<{}>
-  > (
+> (
   handlers: Handler,
   url?: string,
 ) => {
   handler: NextApiHandler,
   url: string,
-  get: FetchFromBase<Handler, "GET">,
-  put: FetchFromBase<Handler, "PUT">,
-  post: FetchFromBase<Handler, "POST">,
-  delete: FetchFromBase<Handler, "DELETE">,
+
   buildReactQuery: (key: string, config?: RequestConfig<getParam<Handler['GET']>>) => {
     url: string,
     key: string,
+  } & hooksCallerExt<Handler>
 
-    useQuery: queryHookFn<getType<Handler['GET']>, getParam<Handler['GET']>>,
-    useQueryObject: queryObjectHookFn<getType<Handler['GET']>, getParam<Handler['GET']>>,
-    useGet: queryObjectHookFn<getType<Handler['GET']>, getParam<Handler['GET']>>,
-
-    usePost: useMutationType<Handler, "POST">,
-    usePut: useMutationType<Handler, "PUT">,
-    useDelete: useMutationType<Handler, "DELETE">,
-
-    prefetch: PrefetchFn<getParam<Handler['GET']>>
-  }
-}
+} & methodsCallerExt<Handler>
   = (_handler, url = "/") => {
 
     type method<P = any, T = any> = (query: P, config: RequestConfig<P>) => Promise<T>
@@ -172,10 +175,7 @@ const createHandler: <
         key,
         url,
 
-        useQuery: query,
-        useQueryObject: queryObject,
         useGet: queryObject,
-
         usePost: _useMutation(post),
         usePut: _useMutation(put),
         useDelete: _useMutation(m_delete),

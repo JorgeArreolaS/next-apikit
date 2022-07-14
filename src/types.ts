@@ -95,58 +95,57 @@ export type getType<H extends NextMethod<unknown, unknown, unknown>> = H extends
 export type getParam<H extends NextMethod<unknown, unknown, unknown>> = H extends NextMethod<any, infer K, any> ? K : any
 export type getError<H extends NextMethod<unknown, unknown, unknown>> = H extends NextMethod<any, any, infer K> ? K : any
 
-/*
+  // get: FetchFromBase<Handler, "GET">,
+  // put: FetchFromBase<Handler, "PUT">,
+  // post: FetchFromBase<Handler, "POST">,
+  // delete: FetchFromBase<Handler, "DELETE">,
 
 // TESTS ZONE
 // just to try-error advanced types
  
 type T = { name: string }
 
-type a = MethodNextHandler<{
-  GET: (q: string, e: { fucked: boolean }) => T,
+type a = NextMethodsHandler<{
+  GET: NextMethod<T, { id: string }>,
   POST: NextMethod<T, { data: number }, { die: boolean }>,
   PUT: NextMethod<T, { id: string }>,
   DELETE: NextMethod<T, { id: string }>,
 }>
-  type construct<M extends METHODS> = a[M]
 
-type tb = construct<'GET'>
-type ta = construct<'POST'>
-type tc = construct<'POST'>
-type td = construct<'DELETE'>
+export type IfHasMethod< 
+  H extends { [x: string]: any }, 
+  M extends METHODS,
+  YES extends any,
+  NO extends any = {}
+> = 
+  Required<H> extends { [ x in M ]: NextMethod<any> } ? YES : NO
 
-type xdxd = getError<construct<'GET'>>
-type xdxd2 = getError<construct<'POST'>>
-type xdxd3 = getError<construct<'PUT'>>
+type construct<M extends METHODS> = a[M]
 
-const a: MethodNextHandler<{ 
+const a: NextMethodsHandler<{ 
+  GET: NextMethod<T, {filter: string}>,
   PUT: NextMethod<T, {id: string}>,
-  POST: ( body: { shit: boolean } ) => T,
-  DELETE: ( body: { shit: boolean }, e: { fucked: boolean } ) => T,
-  GET: NextMethod<T, { filter: string }>
+  POST: NextMethod<T, {shit: string}>,
 }> = {
-  GET: (req, res) => {
+  GET: ({ req, res }) => {
     req.query.filter
     res.send({ 
       name: 'a'
     })
   },
-  POST: (req, res) => {
+  POST: ({ req, res }) => {
     req.body.shit
     res.send({
       name: 'a'
     })
   },
-  PUT: (req, res) => {
+  PUT: ({ req, res }) => {
     req.query.id
     res.send({
       name: 'a'
     })
   }  
 }
-
-*/
-
 
 /*
 type Item<c extends Record<string, Item<{}>> = {}> = {
