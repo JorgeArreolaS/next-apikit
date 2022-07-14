@@ -1,6 +1,6 @@
-import { AxiosRequestConfig } from 'axios';
+import { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { QueryClient, QueryObserverResult, UseMutationOptions, UseMutationResult, useQuery, UseQueryOptions } from 'react-query';
+import { QueryClient, QueryObserverResult, UseMutateAsyncFunction, UseMutationOptions, UseMutationResult, useQuery, UseQueryOptions } from 'react-query';
 export declare type DefaultError = {
     message: string;
 };
@@ -15,7 +15,7 @@ export declare type HookFnReturnExt = {
 };
 export declare type HookFnOptsExt<P> = {
     config?: AxiosRequestConfig<P>;
-};
+} & AxiosExt;
 export declare type queryHookReturnType<T> = QueryObserverResult<T | undefined, Error> & HookFnReturnExt;
 export declare type queryHookOpts<T, P> = UseQueryOptions<T, Error, T, [string, P]> & HookFnOptsExt<P>;
 export declare type queryHookFn<T, P> = (params: P, opts: queryHookOpts<T, P>) => [T, queryHookReturnType<T>];
@@ -23,13 +23,16 @@ export declare type queryObjectHookFn<T, P> = (params: P, opts: queryHookOpts<T,
 export declare type useMutationOptsExt<P> = {
     invalidate?: queryHookReturnType<any>[];
     config?: AxiosRequestConfig<P>;
-};
+} & AxiosExt;
 export declare type useMutationReturnExt = {};
 export declare type useMutationOpts<T, Q, E> = UseMutationOptions<T, ErrorResponse<E>, Q> & useMutationOptsExt<Q>;
 export declare type useMutationReturn<T, Q, E> = UseMutationResult<T, ErrorResponse<E>, Q> & useMutationReturnExt;
-export declare type useMutationFn<T, Q, E = Record<string, any>> = (opts: useMutationOpts<T, Q, E>) => [useMutationReturn<T, Q, E>['mutate'], useMutationReturn<T, Q, E>];
+export declare type useMutationFn<T, Q, E = Record<string, any>> = (opts: useMutationOpts<T, Q, E>) => [UseMutateAsyncFunction<T, E, Q>, useMutationReturn<T, Q, E>];
 export declare type PrefetchFn<P> = (params: P, config?: AxiosRequestConfig<P>) => (queryClient: QueryClient) => Promise<void>;
 export declare type useQueryFnType = typeof useQuery;
+export declare type AxiosExt = {
+    axios?: AxiosInstance;
+};
 declare type NextApiParamsRequest<P> = Omit<NextApiRequest, 'query' | 'body'> & {
     query?: P;
     body?: P;

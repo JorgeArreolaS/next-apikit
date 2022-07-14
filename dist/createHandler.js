@@ -9,7 +9,7 @@ var _axios = _interopRequireDefault(require("axios"));
 
 var _reactQuery = require("react-query");
 
-var _excluded = ["config"];
+var _excluded = ["config", "axios"];
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
@@ -84,6 +84,7 @@ var createHandler = function createHandler(_handler) {
     var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(_query) {
       var config,
           query,
+          client,
           _args = arguments;
       return _regeneratorRuntime().wrap(function _callee$(_context) {
         while (1) {
@@ -91,18 +92,19 @@ var createHandler = function createHandler(_handler) {
             case 0:
               config = _args.length > 1 && _args[1] !== undefined ? _args[1] : {};
               query = Object.assign({}, config.query, _query);
-              _context.next = 4;
-              return _axios["default"].get(parseUrl({
+              client = config.axios || _axios["default"];
+              _context.next = 5;
+              return client.get(parseUrl({
                 url: url,
                 query: query
               }), config).then(function (res) {
                 return res.data;
               })["catch"](catchHandler);
 
-            case 4:
+            case 5:
               return _context.abrupt("return", _context.sent);
 
-            case 5:
+            case 6:
             case "end":
               return _context.stop();
           }
@@ -119,6 +121,7 @@ var createHandler = function createHandler(_handler) {
     var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(data) {
       var config,
           query,
+          client,
           _args2 = arguments;
       return _regeneratorRuntime().wrap(function _callee2$(_context2) {
         while (1) {
@@ -126,18 +129,19 @@ var createHandler = function createHandler(_handler) {
             case 0:
               config = _args2.length > 1 && _args2[1] !== undefined ? _args2[1] : {};
               query = Object.assign({}, config.query);
-              _context2.next = 4;
-              return _axios["default"].put(parseUrl({
+              client = config.axios || _axios["default"];
+              _context2.next = 5;
+              return client.put(parseUrl({
                 url: url,
                 query: query
               }), data, config).then(function (res) {
                 return res.data;
               })["catch"](catchHandler);
 
-            case 4:
+            case 5:
               return _context2.abrupt("return", _context2.sent);
 
-            case 5:
+            case 6:
             case "end":
               return _context2.stop();
           }
@@ -154,6 +158,7 @@ var createHandler = function createHandler(_handler) {
     var _ref4 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(data) {
       var config,
           query,
+          client,
           _args3 = arguments;
       return _regeneratorRuntime().wrap(function _callee3$(_context3) {
         while (1) {
@@ -161,18 +166,19 @@ var createHandler = function createHandler(_handler) {
             case 0:
               config = _args3.length > 1 && _args3[1] !== undefined ? _args3[1] : {};
               query = Object.assign({}, config.query);
-              _context3.next = 4;
-              return _axios["default"].post(parseUrl({
+              client = config.axios || _axios["default"];
+              _context3.next = 5;
+              return client.post(parseUrl({
                 url: url,
                 query: query
               }), data, config).then(function (res) {
                 return res.data;
               })["catch"](catchHandler);
 
-            case 4:
+            case 5:
               return _context3.abrupt("return", _context3.sent);
 
-            case 5:
+            case 6:
             case "end":
               return _context3.stop();
           }
@@ -189,6 +195,7 @@ var createHandler = function createHandler(_handler) {
     var _ref5 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(data) {
       var config,
           query,
+          client,
           _args4 = arguments;
       return _regeneratorRuntime().wrap(function _callee4$(_context4) {
         while (1) {
@@ -196,8 +203,9 @@ var createHandler = function createHandler(_handler) {
             case 0:
               config = _args4.length > 1 && _args4[1] !== undefined ? _args4[1] : {};
               query = Object.assign({}, config.query);
-              _context4.next = 4;
-              return _axios["default"]["delete"](parseUrl({
+              client = config.axios || _axios["default"];
+              _context4.next = 5;
+              return client["delete"](parseUrl({
                 url: url,
                 query: query
               }), _objectSpread({
@@ -206,10 +214,10 @@ var createHandler = function createHandler(_handler) {
                 return res.data;
               })["catch"](catchHandler);
 
-            case 4:
+            case 5:
               return _context4.abrupt("return", _context4.sent);
 
-            case 5:
+            case 6:
             case "end":
               return _context4.stop();
           }
@@ -228,11 +236,8 @@ var createHandler = function createHandler(_handler) {
       key: key,
       url: url
     };
-    console.log("Handler:", _handler);
 
     if ('GET' in _handler) {
-      console.log("Hay get");
-
       var createQueryHandler = function createQueryHandler() {
         var added_config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
         var config = Object.assign(general_config, added_config);
@@ -267,9 +272,12 @@ var createHandler = function createHandler(_handler) {
 
       var _useQuery = function _useQuery(params, _opts) {
         var config = _opts.config,
+            axios = _opts.axios,
             opts = _objectWithoutProperties(_opts, _excluded);
 
-        var res = (0, _reactQuery.useQuery)([key, params], createQueryHandler(config), opts);
+        var res = (0, _reactQuery.useQuery)([key, params], createQueryHandler(_objectSpread(_objectSpread({}, config), {}, {
+          axios: axios
+        })), opts);
         var queryClient = (0, _reactQuery.useQueryClient)();
         var ext = {
           invalidate: function invalidate() {
@@ -309,7 +317,6 @@ var createHandler = function createHandler(_handler) {
 
       res['useGet'] = _useQuery;
       res['prefetch'] = prefetch;
-      console.log("res:", res);
     }
 
     var _useMutation = function _useMutation(methodFn) {
@@ -322,20 +329,21 @@ var createHandler = function createHandler(_handler) {
         };
 
         var methodHandler = function methodHandler(data) {
-          return methodFn(data, opts.config);
+          return methodFn(data, _objectSpread(_objectSpread({}, opts.config), {}, {
+            axios: opts.axios
+          }));
         };
 
         var res = (0, _reactQuery.useMutation)(methodHandler, _objectSpread(_objectSpread({}, opts), {}, {
           onSuccess: onSuccess
         }));
-        return [res.mutate, res];
+        return [res.mutateAsync, res];
       };
     };
 
     if ('POST' in _handler) res['usePost'] = _useMutation(post);
     if ('PUT' in _handler) res['usePut'] = _useMutation(put);
     if ('DELETE' in _handler) res['useDelete'] = _useMutation(m_delete);
-    console.log("res final:", res);
     return res;
   };
 

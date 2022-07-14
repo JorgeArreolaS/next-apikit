@@ -1,9 +1,9 @@
 import { AxiosRequestConfig } from 'axios';
 import { NextApiHandler } from 'next';
-import { PrefetchFn, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, getError, IfHasMethod } from './types';
+import { PrefetchFn, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, getError, IfHasMethod, AxiosExt } from './types';
 declare type RequestConfig<T> = AxiosRequestConfig<T> & {
     query?: T;
-};
+} & AxiosExt;
 declare type Fetch<P, T> = (params: P, config?: RequestConfig<P>) => Promise<T>;
 declare type FetchFromBase<Base extends MethodNextHandlerBase, Method extends METHODS> = Fetch<getParam<Base[Method]>, getType<Base[Method]>>;
 declare type useMutationType<Base extends MethodNextHandlerBase, Method extends METHODS> = useMutationFn<getType<Base[Method]>, getParam<Base[Method]>, getError<Base[Method]>>;

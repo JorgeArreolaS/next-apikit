@@ -1,6 +1,6 @@
-import { AxiosRequestConfig } from 'axios';
+import { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { NextApiRequest, NextApiResponse } from 'next'
-import { QueryClient, QueryObserverResult, UseMutationOptions, UseMutationResult, useQuery, UseQueryOptions } from 'react-query'
+import { QueryClient, QueryObserverResult, UseMutateAsyncFunction, UseMutationOptions, UseMutationResult, useQuery, UseQueryOptions } from 'react-query'
 
 // Utils
 
@@ -21,7 +21,7 @@ export type HookFnReturnExt = {
 }
 export type HookFnOptsExt<P> = {
   config?: AxiosRequestConfig<P>
-}
+} & AxiosExt
 export type queryHookReturnType<T> = QueryObserverResult<T | undefined, Error> & HookFnReturnExt
 export type queryHookOpts<T, P> = UseQueryOptions<T, Error, T, [string, P]> & HookFnOptsExt<P>
 
@@ -34,7 +34,7 @@ export type queryObjectHookFn<T, P> = (params: P, opts: queryHookOpts<T, P>) => 
 export type useMutationOptsExt<P> = {
   invalidate?: queryHookReturnType<any>[]
   config?: AxiosRequestConfig<P>
-}
+} & AxiosExt
 export type useMutationReturnExt = {
 
 }
@@ -43,7 +43,7 @@ export type useMutationReturn<T, Q, E> = UseMutationResult<T, ErrorResponse<E>, 
 
 export type useMutationFn<T, Q, E = Record<string, any>> = (
   opts: useMutationOpts<T, Q, E>
-) => [useMutationReturn<T, Q, E>['mutate'], useMutationReturn<T, Q, E>]
+) => [ UseMutateAsyncFunction<T, E, Q>, useMutationReturn<T, Q, E>]
 
 
 // Misc section
@@ -51,6 +51,7 @@ export type useMutationFn<T, Q, E = Record<string, any>> = (
 export type PrefetchFn<P> = (params: P, config?: AxiosRequestConfig<P>) => (queryClient: QueryClient) => Promise<void>
 export type useQueryFnType = typeof useQuery
 
+export type AxiosExt = { axios?: AxiosInstance }
 
 // API handlers
 
@@ -95,6 +96,14 @@ export type getType<H extends NextMethod<unknown, unknown, unknown>> = H extends
 export type getParam<H extends NextMethod<unknown, unknown, unknown>> = H extends NextMethod<any, infer K, any> ? K : any
 export type getError<H extends NextMethod<unknown, unknown, unknown>> = H extends NextMethod<any, any, infer K> ? K : any
 
+export type IfHasMethod< 
+  H extends { [x: string]: any }, 
+  M extends METHODS,
+  YES extends any,
+  NO extends any = {}
+> = 
+  Required<H> extends { [ x in M ]: NextMethod<any> } ? YES : NO
+
   // get: FetchFromBase<Handler, "GET">,
   // put: FetchFromBase<Handler, "PUT">,
   // post: FetchFromBase<Handler, "POST">,
@@ -103,6 +112,7 @@ export type getError<H extends NextMethod<unknown, unknown, unknown>> = H extend
 // TESTS ZONE
 // just to try-error advanced types
  
+/*
 type T = { name: string }
 
 type a = NextMethodsHandler<{
@@ -111,14 +121,7 @@ type a = NextMethodsHandler<{
   PUT: NextMethod<T, { id: string }>,
   DELETE: NextMethod<T, { id: string }>,
 }>
-
-export type IfHasMethod< 
-  H extends { [x: string]: any }, 
-  M extends METHODS,
-  YES extends any,
-  NO extends any = {}
-> = 
-  Required<H> extends { [ x in M ]: NextMethod<any> } ? YES : NO
+ */
 
   /*
 type construct<M extends METHODS> = a[M]

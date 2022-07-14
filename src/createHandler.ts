@@ -1,7 +1,7 @@
-import axios, { Axios, AxiosError, AxiosRequestConfig } from 'axios'
-import { NextApiHandler, NextApiResponse } from 'next';
-import { QueryClient, QueryFunctionContext, useMutation, UseMutationOptions, UseMutationResult, useQuery, useQueryClient, UseQueryOptions } from 'react-query'
-import { queryHookFn, NextMethod, PrefetchFn, useQueryFnType, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, HookFnReturnExt, queryHookReturnType, useMutationOptsExt, useMutationOpts, getError, successFn, failFn, DefaultError, queryHookOpts, IfHasMethod } from './types'
+import axios, { AxiosError, AxiosRequestConfig } from 'axios'
+import { NextApiHandler } from 'next';
+import { QueryClient, QueryFunctionContext, useMutation, UseMutationOptions, useQuery, useQueryClient } from 'react-query'
+import { NextMethod, PrefetchFn, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, HookFnReturnExt, useMutationOpts, getError, successFn, failFn, DefaultError, queryHookOpts, IfHasMethod, AxiosExt } from './types'
 
 let isServer = (typeof window === 'undefined') ? true : false;
 
@@ -40,7 +40,7 @@ const catchHandler = <T = any>(err: AxiosError<T>) => {
   }
 }
 
-type RequestConfig<T> = AxiosRequestConfig<T> & { query?: T }
+type RequestConfig<T> = AxiosRequestConfig<T> & { query?: T } & AxiosExt
 
 type Fetch<P, T> = (params: P, config?: RequestConfig<P>) => Promise<T>
 type FetchFromBase<Base extends MethodNextHandlerBase, Method extends METHODS> =
@@ -85,28 +85,32 @@ const createHandler: <
 
     const get: method = async (_query, config = {}) => {
       const query = Object.assign({}, config.query, _query)
-      return await axios.get(parseUrl({ url, query }), config)
+      const client = config.axios || axios
+      return await client.get(parseUrl({ url, query }), config)
         .then(res => res.data)
         .catch(catchHandler)
     }
 
     const put: method = async (data, config = {}) => {
       const query = Object.assign({}, config.query)
-      return await axios.put(parseUrl({ url, query }), data, config)
+      const client = config.axios || axios
+      return await client.put(parseUrl({ url, query }), data, config)
         .then(res => res.data)
         .catch(catchHandler)
     }
 
     const post: method = async (data, config = {}) => {
       const query = Object.assign({}, config.query)
-      return await axios.post(parseUrl({ url, query }), data, config)
+      const client = config.axios || axios
+      return await client.post(parseUrl({ url, query }), data, config)
         .then(res => res.data)
         .catch(catchHandler)
     }
 
     const m_delete: method = async (data, config = {}) => {
       const query = Object.assign({}, config.query)
-      return await axios.delete(parseUrl({ url, query }), { data, ...config })
+      const client = config.axios || axios
+      return await client.delete(parseUrl({ url, query }), { data, ...config })
         .then(res => res.data)
         .catch(catchHandler)
     }
@@ -123,11 +127,9 @@ const createHandler: <
         type TData = any
         type Opts = queryHookOpts<TData, ParamsType>
 
-        console.log("Handler:", _handler)
         if ('GET' in _handler) {
-          console.log("Hay get")
 
-          const createQueryHandler = (added_config: AxiosRequestConfig<any> = {}) => {
+          const createQueryHandler = (added_config: AxiosRequestConfig<any> & AxiosExt = {}) => {
             const config = Object.assign(general_config, added_config)
             return async ({ queryKey: [_key, query] }: QueryFunctionContext<TQueryKey>) => {
               return await get(query, config)
@@ -135,8 +137,8 @@ const createHandler: <
           }
 
           const _useQuery: queryObjectHookFn<TData, ParamsType> = (params: ParamsType, _opts: Opts) => {
-            const { config, ...opts } = _opts
-            const res = useQuery<TData, Error, TData, TQueryKey>([key, params], createQueryHandler(config), opts)
+            const { config, axios, ...opts } = _opts
+            const res = useQuery<TData, Error, TData, TQueryKey>([key, params], createQueryHandler({ ...config, axios }), opts)
             const queryClient = useQueryClient()
 
             const ext: HookFnReturnExt = {
@@ -153,30 +155,28 @@ const createHandler: <
 
           res['useGet'] = _useQuery
           res['prefetch'] = prefetch
-          console.log("res:", res)
         }
 
         const _useMutation = (methodFn: any) => (opts: useMutationOpts<any, any, any>) => {
-          const onSuccess = ((data, vars, cxt) => {
+          const onSuccess: UseMutationOptions<any>['onSuccess'] = ((data, vars, cxt) => {
             if (opts.invalidate)
               opts.invalidate.forEach(query => query.invalidate())
 
             if (opts.onSuccess)
               opts.onSuccess(data, vars, cxt)
           })
-          const methodHandler = (data: any) => methodFn(data, opts.config)
+          const methodHandler = (data: any) => methodFn(data, { ...opts.config, axios: opts.axios })
           const res = useMutation(methodHandler, {
             ...opts,
             onSuccess,
           })
-          return [res.mutate, res]
+          return [res.mutateAsync, res]
         }
 
         if ('POST' in _handler) res['usePost'] = _useMutation(post)
         if ('PUT' in _handler) res['usePut'] = _useMutation(put)
         if ('DELETE' in _handler) res['useDelete'] = _useMutation(m_delete)
 
-        console.log("res final:", res)
         return res;
       }
 
