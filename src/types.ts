@@ -120,6 +120,7 @@ export type IfHasMethod<
 > = 
   Required<H> extends { [ x in M ]: NextMethod<any> } ? YES : NO
 
+  /*
 type construct<M extends METHODS> = a[M]
 
 const a: NextMethodsHandler<{ 
@@ -146,6 +147,7 @@ const a: NextMethodsHandler<{
     })
   }  
 }
+   */
 
 /*
 type Item<c extends Record<string, Item<{}>> = {}> = {

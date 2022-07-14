@@ -8,6 +8,9 @@ import { join, normalize, parse, resolve } from 'path'
 
 type Babel = typeof BabelNS;
 type PluginObj = BabelNS.PluginObj
+
+type Node = BabelNS.NodePath<BabelNS.types.Node>
+
 const isServer = (parent: BabelNS.PluginPass) => parent.file.opts.caller && parent.file.opts.caller['isServer'] === true
 const isClient = (parent: BabelNS.PluginPass) => !isServer(parent)
 
@@ -72,9 +75,14 @@ export default (babel: Babel): PluginObj => ({
               _path.node.arguments[1] = BabelNS.types.stringLiteral(url);
 
               if (isClient(parent)) { // Remove backend handlers on client bundle
-                const a = _path.get("arguments.0") as BabelNS.NodePath<BabelNS.types.Node>;
-                a[willBeReplacedMark] = true;
-                a.replaceWithSourceString(`{}`);
+                const obj = _path.get("arguments.0") as Node
+                // console.log(obj)
+               	const props = obj.get("properties") as Node[]
+               	props.forEach( p => {
+                  	const v = p.get("value") as Node
+                    v[willBeReplacedMark] = true;
+                    v.replaceWithSourceString('()=>{}')
+                })
               }
             }
           });

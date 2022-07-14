@@ -49,24 +49,24 @@ type FetchFromBase<Base extends MethodNextHandlerBase, Method extends METHODS> =
 type useMutationType<Base extends MethodNextHandlerBase, Method extends METHODS> =
   useMutationFn<getType<Base[Method]>, getParam<Base[Method]>, getError<Base[Method]>>
 
-type methodsCallerExt< H extends NextMethodsHandler<any> > = {}
+type methodsCallerExt<H extends NextMethodsHandler<any>> = {}
   & IfHasMethod<H, 'GET', { get: FetchFromBase<H, "GET"> }>
   & IfHasMethod<H, 'PUT', { put: FetchFromBase<H, "PUT"> }>
   & IfHasMethod<H, 'POST', { post: FetchFromBase<H, "POST"> }>
   & IfHasMethod<H, 'DELETE', { delete: FetchFromBase<H, "DELETE"> }>
 
-type hooksCallerExt< H extends NextMethodsHandler<any> > = {}
-  & IfHasMethod<H, 'GET',  { 
+type hooksCallerExt<H extends NextMethodsHandler<any>> = {}
+  & IfHasMethod<H, 'GET', {
     useGet: queryObjectHookFn<getType<H['GET']>, getParam<H['GET']>>,
     prefetch: PrefetchFn<getParam<H['GET']>>
   }>
-  & IfHasMethod<H, 'PUT',  { usePut: useMutationType<H, "PUT">, }>
-  & IfHasMethod<H, 'POST',  { usePost: useMutationType<H, "POST">, }>
-  & IfHasMethod<H, 'DELETE',  { useDelete: useMutationType<H, "DELETE">, }>
+  & IfHasMethod<H, 'PUT', { usePut: useMutationType<H, "PUT">, }>
+  & IfHasMethod<H, 'POST', { usePost: useMutationType<H, "POST">, }>
+  & IfHasMethod<H, 'DELETE', { useDelete: useMutationType<H, "DELETE">, }>
 
 const createHandler: <
   Handler extends NextMethodsHandler<any> = NextMethodsHandler<{}>
-> (
+  > (
   handlers: Handler,
   url?: string,
 ) => {
@@ -111,79 +111,74 @@ const createHandler: <
         .catch(catchHandler)
     }
 
-    const buildReactQuery: (key: string, config: RequestConfig<any>) => any = 
-    (key, general_config = {}) => {
+    const buildReactQuery: (key: string, config: RequestConfig<any>) => any =
+      (key, general_config = {}) => {
 
-      type ParamsType = any
-      type TQueryKey = [string, ParamsType]
+        const res = { key, url }
 
-      const createQueryHandler = ( added_config: AxiosRequestConfig<any> = {} ) => {
-        const config = Object.assign( general_config, added_config )
-        return async ( { queryKey: [_key, query] }: QueryFunctionContext<TQueryKey> ) => {
-          return await get(query, config)
+        type ParamsType = any
+        type TQueryKey = [string, ParamsType]
+
+
+        type TData = any
+        type Opts = queryHookOpts<TData, ParamsType>
+
+        console.log("Handler:", _handler)
+        if ('GET' in _handler) {
+          console.log("Hay get")
+
+          const createQueryHandler = (added_config: AxiosRequestConfig<any> = {}) => {
+            const config = Object.assign(general_config, added_config)
+            return async ({ queryKey: [_key, query] }: QueryFunctionContext<TQueryKey>) => {
+              return await get(query, config)
+            }
+          }
+
+          const _useQuery: queryObjectHookFn<TData, ParamsType> = (params: ParamsType, _opts: Opts) => {
+            const { config, ...opts } = _opts
+            const res = useQuery<TData, Error, TData, TQueryKey>([key, params], createQueryHandler(config), opts)
+            const queryClient = useQueryClient()
+
+            const ext: HookFnReturnExt = {
+              invalidate: () => queryClient.invalidateQueries(key)
+            }
+
+            return { ...ext, ...res }
+          }
+
+          const prefetch: PrefetchFn<any> = (params, config = {}) => {
+            return async (queryClient: QueryClient) =>
+              await queryClient.prefetchQuery([key, params], createQueryHandler(config))
+          }
+
+          res['useGet'] = _useQuery
+          res['prefetch'] = prefetch
+          console.log("res:", res)
         }
-      }
 
-      type TData = any
-      type Opts = queryHookOpts<TData, ParamsType>
+        const _useMutation = (methodFn: any) => (opts: useMutationOpts<any, any, any>) => {
+          const onSuccess = ((data, vars, cxt) => {
+            if (opts.invalidate)
+              opts.invalidate.forEach(query => query.invalidate())
 
-      const query: queryHookFn<TData, ParamsType> = (params: ParamsType, _opts: Opts) => {
-        const { config, ...opts } = _opts
-        const res = useQuery<TData, Error, TData, TQueryKey>([key, params], createQueryHandler(config), opts)
-        const queryClient = useQueryClient()
-
-        const ext: HookFnReturnExt = {
-          invalidate: () => queryClient.invalidateQueries(key)
+            if (opts.onSuccess)
+              opts.onSuccess(data, vars, cxt)
+          })
+          const methodHandler = (data: any) => methodFn(data, opts.config)
+          const res = useMutation(methodHandler, {
+            ...opts,
+            onSuccess,
+          })
+          return [res.mutate, res]
         }
 
-        return [res.data, { ...ext, ...res }]
+        if ('POST' in _handler) res['usePost'] = _useMutation(post)
+        if ('PUT' in _handler) res['usePut'] = _useMutation(put)
+        if ('DELETE' in _handler) res['useDelete'] = _useMutation(m_delete)
 
+        console.log("res final:", res)
+        return res;
       }
-      const queryObject: queryObjectHookFn<TData, ParamsType> = (params: ParamsType, _opts: Opts) => {
-        const { config, ...opts } = _opts
-        const res = useQuery<TData, Error, TData, TQueryKey>([key, params], createQueryHandler(config), opts)
-        const queryClient = useQueryClient()
-
-        const ext: HookFnReturnExt = {
-          invalidate: () => queryClient.invalidateQueries(key)
-        }
-
-        return { ...ext, ...res }
-      }
-
-      const _useMutation = (methodFn: any) => (opts: useMutationOpts<any, any, any>) => {
-        const onSuccess = ((data, vars, cxt) => {
-          if (opts.invalidate)
-            opts.invalidate.forEach(query => query.invalidate())
-
-          if (opts.onSuccess)
-            opts.onSuccess(data, vars, cxt)
-        })
-        const methodHandler = (data: any) => methodFn(data, opts.config)
-        const res = useMutation(methodHandler, {
-          ...opts,
-          onSuccess,
-        })
-        return [res.mutate, res]
-      }
-
-      const prefetch: PrefetchFn<any> = (params, config = {}) =>
-        async (queryClient: QueryClient) =>
-          await queryClient.prefetchQuery([key, params], createQueryHandler(config) )
-
-      return {
-        key,
-        url,
-
-        useGet: queryObject,
-        usePost: _useMutation(post),
-        usePut: _useMutation(put),
-        useDelete: _useMutation(m_delete),
-
-        prefetch,
-      }
-
-    }
 
     const handler: NextApiHandler = (req, res) => {
       // console.log("Method", req.method, "called to", req.url)
