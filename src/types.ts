@@ -147,6 +147,8 @@ const a: MethodNextHandler<{
 
 */
 
+
+/*
 type Item<c extends Record<string, Item<{}>> = {}> = {
   name: string
   routes?: {
@@ -196,3 +198,4 @@ a.name
 a.routes.b.name
 
 const l = ['a','b','c']
+*/
