@@ -29,6 +29,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const BabelNS = __importStar(require("@babel/core"));
 const generator_1 = __importDefault(require("@babel/generator"));
 const chalk_1 = __importDefault(require("chalk"));
+const t = BabelNS.types;
 const isServer = (parent) => parent.file.opts.caller && parent.file.opts.caller['isServer'] === true;
 const isClient = (parent) => !isServer(parent);
 const sideTag = (parent) => chalk_1.default.gray(isServer(parent) ? "[SERVER]" : "[CLIENT]");
@@ -48,7 +49,7 @@ exports.default = (babel) => ({
         Program: {
             enter(path, parent) {
                 if (parent.filename.includes('pages/api/')) {
-                    log("Joining into an api file", parent);
+                    // log("Into an api file", parent)
                     path.traverse({
                         CallExpression(_path) {
                             const callee = _path.node.callee;
@@ -59,7 +60,6 @@ exports.default = (babel) => ({
                             _path.node.arguments[1] = BabelNS.types.stringLiteral(url);
                             if (isClient(parent)) { // Remove backend handlers on client bundle
                                 const obj = _path.get("arguments.0");
-                                // console.log(obj)
                                 const props = obj.get("properties");
                                 props.forEach(p => {
                                     const k = p.get("key");
@@ -69,6 +69,13 @@ exports.default = (babel) => ({
                                     v[willBeReplacedMark] = true;
                                     v.replaceWithSourceString('()=>{}');
                                 });
+                                const declarator = _path.parentPath.node;
+                                const name = declarator.id.name;
+                                const defExport = path.get('body').find(e => t.isExportDefaultDeclaration(e));
+                                if (!defExport) {
+                                    const e = t.exportDefaultDeclaration(t.memberExpression(t.identifier(name), t.identifier("handler")));
+                                    path.node.body.push(e);
+                                }
                             }
                         }
                     });
@@ -76,7 +83,6 @@ exports.default = (babel) => ({
             },
             exit: (path, parent) => {
                 if (isClient(parent) && parent.filename.includes('pages/api/')) {
-                    parent.opts['ignore'] = ["twin.macro"];
                     RemoveUnusedAndRemovedRefsImports({ path, parent, t: babel.types });
                     printCode({ parent, header: "After removed:" });
                 }

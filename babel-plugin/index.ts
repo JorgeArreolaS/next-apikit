@@ -5,6 +5,7 @@ import chalk from 'chalk';
 
 type Babel = typeof BabelNS;
 type PluginObj = BabelNS.PluginObj
+const t = BabelNS.types
 
 type Node = BabelNS.NodePath<BabelNS.types.Node>
 
@@ -37,7 +38,7 @@ export default (babel: Babel): PluginObj => ({
     Program: {
       enter(path, parent) {
         if (parent.filename.includes('pages/api/')) {
-          log("Joining into an api file", parent)
+          // log("Into an api file", parent)
 
           path.traverse({
             CallExpression(_path) {
@@ -51,17 +52,33 @@ export default (babel: Babel): PluginObj => ({
 
               if (isClient(parent)) { // Remove backend handlers on client bundle
                 const obj = _path.get("arguments.0") as Node
-                // console.log(obj)
-               	const props = obj.get("properties") as Node[]
-               	props.forEach( p => {
-                    const k = p.get("key") as BabelNS.NodePath<BabelNS.types.Identifier>
-                  	if (['key', 'routes'].includes(k.node.name))
-                      return
 
-                  	const v = p.get("value") as Node
-                    v[willBeReplacedMark] = true;
-                    v.replaceWithSourceString('()=>{}')
+                const props = obj.get("properties") as Node[]
+                props.forEach(p => {
+                  const k = p.get("key") as BabelNS.NodePath<BabelNS.types.Identifier>
+                  if (['key', 'routes'].includes(k.node.name))
+                    return
+
+                  const v = p.get("value") as Node
+                  v[willBeReplacedMark] = true;
+                  v.replaceWithSourceString('()=>{}')
                 })
+
+                const declarator = _path.parentPath.node as BabelNS.types.VariableDeclarator
+                const name = ( declarator.id as BabelNS.types.Identifier ).name
+
+                const defExport = path.get('body').find(e => t.isExportDefaultDeclaration(e))
+
+                if (!defExport) {
+                  const e = t.exportDefaultDeclaration(
+                    t.memberExpression(
+                      t.identifier(name),
+                      t.identifier("handler"),
+                    )
+                  )
+                  path.node.body.push(e)
+                }
+
               }
             }
           });
@@ -69,7 +86,6 @@ export default (babel: Babel): PluginObj => ({
       },
       exit: (path, parent) => {
         if (isClient(parent) && parent.filename.includes('pages/api/')) {
-          parent.opts['ignore'] = ["twin.macro"];
           RemoveUnusedAndRemovedRefsImports({ path, parent, t: babel.types });
           printCode({ parent, header: "After removed:" })
         }
