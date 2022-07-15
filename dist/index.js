@@ -15,10 +15,10 @@ Object.defineProperty(exports, "apiPrefetch", {
     return _prefetch.apiPrefetch;
   }
 });
-Object.defineProperty(exports, "createEndpoint", {
+Object.defineProperty(exports, "endpoint", {
   enumerable: true,
   get: function get() {
-    return _createHandler.createHandler;
+    return _createHandler.endpoint;
   }
 });
 Object.defineProperty(exports, "gSSPwithPrefetch", {
@@ -28,8 +28,8 @@ Object.defineProperty(exports, "gSSPwithPrefetch", {
   }
 });
 
-var _createHandler = require("./createHandler");
-
 var _prefetch = require("./prefetch");
+
+var _createHandler = require("./createHandler");
 
 var _ApikitProvider = require("./ApikitProvider");

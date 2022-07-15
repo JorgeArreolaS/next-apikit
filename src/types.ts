@@ -76,7 +76,7 @@ export type failureCodeFns<E> = {
   [code in FAILURE_HTTP_CODES]: ( data: E extends DefaultError ? string : E ) => void
 }
 
-export type NextMethod<
+export type Method<
   T,
   P = any,
   E extends Record<string, any> = DefaultError
@@ -97,7 +97,7 @@ export type NextMethod<
 export type METHODS = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 export type MethodNextHandlerBase = {
-  [X in METHODS]?: NextMethod<any, any, any>
+  [X in METHODS]?: Method<any, any, any>
 } & HandlerRoutesTypeExt
 
 export type HandlerRoutesTypeExt = {
@@ -117,13 +117,13 @@ export type RoutesBaseExt<H extends HandlerRoutesTypeExt> = {
   routes?: getRoutes<H>
 }
 
-export type NextMethodsHandler<Base extends MethodNextHandlerBase> = {
+export type ApiMethods<Base extends MethodNextHandlerBase> = {
   [X in keyof Base]?: Base[X]
 }
 
-export type getType<H extends NextMethod<unknown, unknown, unknown>> = H extends NextMethod<infer K, any, any> ? K : any
-export type getParam<H extends NextMethod<unknown, unknown, unknown>> = H extends NextMethod<any, infer K, any> ? K : any
-export type getError<H extends NextMethod<unknown, unknown, unknown>> = H extends NextMethod<any, any, infer K> ? K : any
+export type getType<H extends Method<unknown, unknown, unknown>> = H extends Method<infer K, any, any> ? K : any
+export type getParam<H extends Method<unknown, unknown, unknown>> = H extends Method<any, infer K, any> ? K : any
+export type getError<H extends Method<unknown, unknown, unknown>> = H extends Method<any, any, infer K> ? K : any
 
 export type IfHasMethod<
   H extends { [x: string]: any },
@@ -131,7 +131,7 @@ export type IfHasMethod<
   YES extends any,
   NO extends any = {}
   > =
-  Required<H> extends { [x in M]: NextMethod<unknown, unknown, unknown> } ? YES : NO
+  Required<H> extends { [x in M]: Method<unknown, unknown, unknown> } ? YES : NO
 
 export type IfHas<
   H extends { [x: string]: any },

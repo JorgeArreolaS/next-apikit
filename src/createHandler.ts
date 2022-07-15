@@ -2,7 +2,7 @@ import axios, { AxiosRequestConfig } from 'axios'
 import { NextApiHandler } from 'next';
 import { QueryClient, QueryFunctionContext, useMutation, UseMutationOptions, useQuery, useQueryClient } from 'react-query'
 import { failure_http_codes, success_http_codes } from './http-codes';
-import { NextMethod, PrefetchFn, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, HookFnReturnExt, useMutationOpts, getError, successFn, failFn, DefaultError, queryHookOpts, IfHasMethod, AxiosExt, IfHas, getRoutes } from './types'
+import { Method, PrefetchFn, queryObjectHookFn, useMutationFn, ApiMethods, MethodNextHandlerBase, getParam, getType, METHODS, HookFnReturnExt, useMutationOpts, getError, successFn, failFn, DefaultError, queryHookOpts, IfHasMethod, AxiosExt, IfHas, getRoutes } from './types'
 import { capitalize, catchHandler, httpCode, isServer, parseUrl, queryUrl } from './utils';
 
 
@@ -15,13 +15,13 @@ type FetchFromBase<Base extends MethodNextHandlerBase, Method extends METHODS> =
 type useMutationType<Base extends MethodNextHandlerBase, Method extends METHODS> =
   useMutationFn<getType<Base[Method]>, getParam<Base[Method]>, getError<Base[Method]>>
 
-type methodsCallerExt<H extends NextMethodsHandler<any>> = {}
+type methodsCallerExt<H extends ApiMethods<any>> = {}
   & IfHasMethod<H, 'GET', { get: FetchFromBase<H, "GET"> }>
   & IfHasMethod<H, 'PUT', { put: FetchFromBase<H, "PUT"> }>
   & IfHasMethod<H, 'POST', { post: FetchFromBase<H, "POST"> }>
   & IfHasMethod<H, 'DELETE', { delete: FetchFromBase<H, "DELETE"> }>
 
-type hooksCallerExt<H extends NextMethodsHandler<any>> = {}
+type hooksCallerExt<H extends ApiMethods<any>> = {}
   & IfHasMethod<H, 'GET', {
     useGet: queryObjectHookFn<getType<H['GET']>, getParam<H['GET']>>,
     prefetch: PrefetchFn<getParam<H['GET']>>
@@ -30,10 +30,10 @@ type hooksCallerExt<H extends NextMethodsHandler<any>> = {}
   & IfHasMethod<H, 'POST', { usePost: useMutationType<H, "POST">, }>
   & IfHasMethod<H, 'DELETE', { useDelete: useMutationType<H, "DELETE">, }>
 
-type routesExt<H extends NextMethodsHandler<any>> = 
+type routesExt<H extends ApiMethods<any>> = 
   IfHas<H, 'routes', { routes: getRoutes<H> }, { routes: {} }>
 
-export type creatorReturn<K extends string = string, H extends NextMethodsHandler<any> = {}> = {
+export type creatorReturn<K extends string = string, H extends ApiMethods<any> = {}> = {
   url: string
   key: K
   handler: NextApiHandler
@@ -42,9 +42,9 @@ export type creatorReturn<K extends string = string, H extends NextMethodsHandle
   & routesExt<H>['routes']
 
 
-const createHandler: <
+const endpoint: <
   key extends string,
-  Bundler extends NextMethodsHandler<any>,
+  Bundler extends ApiMethods<any>,
   // Handler extends NextMethodsHandler<any> = Omit<Bundler, 'routes'>,
   >(
   handlers: Bundler & { key: key },
@@ -157,7 +157,7 @@ const createHandler: <
 
     const handler: NextApiHandler = (req, res) => {
       // console.log("Method", req.method, "called to", req.url)
-      const fn = _handler[String(req.method).toUpperCase()] as NextMethod<any, any, any>
+      const fn = _handler[String(req.method).toUpperCase()] as Method<any, any, any>
 
       if (!fn) {
         return res.status(405).send({
@@ -206,4 +206,4 @@ const createHandler: <
     return res
   }
 
-export { createHandler }
+export { endpoint }

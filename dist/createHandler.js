@@ -5,7 +5,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.createHandler = void 0;
+exports.endpoint = void 0;
 
 var _axios = _interopRequireDefault(require("axios"));
 
@@ -48,7 +48,7 @@ function _objectWithoutProperties(source, excluded) { if (source == null) return
 
 function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
 
-var createHandler = function createHandler(payload) {
+var endpoint = function endpoint(payload) {
   var _url = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "/";
 
   var key = payload.key,
@@ -398,4 +398,4 @@ var createHandler = function createHandler(payload) {
   return res;
 };
 
-exports.createHandler = createHandler;
+exports.endpoint = endpoint;

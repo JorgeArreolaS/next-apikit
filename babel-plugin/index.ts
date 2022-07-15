@@ -1,10 +1,7 @@
 import * as BabelNS from '@babel/core';
-import { template } from '@babel/core';
 import generate from '@babel/generator'
 import { Binding } from '@babel/traverse';
 import chalk from 'chalk';
-import * as fs from 'fs'
-import { join, normalize, parse, resolve } from 'path'
 
 type Babel = typeof BabelNS;
 type PluginObj = BabelNS.PluginObj
@@ -35,39 +32,17 @@ const printCode = ({ header = "", node, parent }: {
   );
 }
 
-const fromCode = (code: string, params: Record<string, any> = {}) => {
-  const buildRequire = template(code);
-  const ast = buildRequire(params) as BabelNS.types.Statement
-  return ast
-}
-
-const isCapableOfBlocks = (item: string, exts: string[] = [".tsx", ".ts"]): boolean => {
-  const parsed = parse(item)
-  if (
-    item.includes('pages/api/block') ||
-    item.includes('lib/helpers/queryToolkit') ||
-    !exts.includes(parsed.ext) ||
-    parsed.dir.includes('lib/plugins') ||
-    parsed.name.startsWith('_')
-  ) return false
-  return true
-}
-
 export default (babel: Babel): PluginObj => ({
   visitor: {
     Program: {
       enter(path, parent) {
-        if (parent.filename.includes('pages/api/block')) {
-          log("Start processing in ", parent)
-          processBlockApiFound(babel, path, parent)
-        }
         if (parent.filename.includes('pages/api/')) {
           log("Joining into an api file", parent)
 
           path.traverse({
             CallExpression(_path) {
               const callee = _path.node.callee as BabelNS.types.Identifier;
-              if (callee.name !== "createEndpoint") return;
+              if (callee.name !== "endpoint") return;
 
               const match = (parent.filename).match(/(?<=\/pages)(.*)(?=\.)/)
               const url = match ? match[0] : '';
@@ -91,17 +66,6 @@ export default (babel: Babel): PluginObj => ({
             }
           });
         }
-        if (isCapableOfBlocks(parent.filename) && parent.file.code.includes("createApiBlock")) {
-          log("Creating export of included API blocks", parent)
-
-          const buildRequire = template(`
-          export const includeApiBlocks = {}
-        `);
-
-          path.node.body.push(buildRequire() as BabelNS.types.Statement)
-
-          // console.log( generate(path.node).code.split("\n").map( (line, index) => `${chalk.yellow(index+1)} | ${line}` ).join("\n"), "\n" )
-        }
       },
       exit: (path, parent) => {
         if (isClient(parent) && parent.filename.includes('pages/api/')) {
@@ -111,132 +75,8 @@ export default (babel: Babel): PluginObj => ({
         }
       }
     },
-    CallExpression(path, parent) {
-      if (!parent.filename.includes('pages/') && !parent.filename.includes('lib/')) return
-      if (parent.filename.startsWith("_")) return
-
-      const node = path.node as BabelNS.types.CallExpression
-      const callee = node.callee as BabelNS.types.Identifier
-      if (callee.name !== "createApiBlock") return
-
-      if (isServer(parent)) {
-        const key = node.arguments[0] as BabelNS.types.StringLiteral
-        const func = node.arguments[1] as BabelNS.types.ArrowFunctionExpression
-
-        log("Creating API blocks key", parent)
-
-        parent.file.path.node.body.push(fromCode(
-          `includeApiBlocks['${key.value}'] = %%func%%`,
-          { func: func }
-        ))
-
-      } else {
-        const func = node.arguments[1] as BabelNS.types.ArrowFunctionExpression
-        const body = func.body as BabelNS.types.BlockStatement
-
-        body.body = []
-        log("Purged API Blocks in ", parent)
-      }
-    }
   },
 })
-
-function processBlockApiFound(
-  babel: Babel,
-  path: BabelNS.NodePath<BabelNS.types.Program>,
-  parent: BabelNS.PluginPass
-) {
-
-  const blocksDir = resolve(parent.cwd, ".dist/api", "blocks")
-
-  if (!fs.existsSync(blocksDir))
-    fs.mkdirSync(blocksDir)
-
-  console.log("Loading API blocks\n")
-
-  const exts = ['.ts', '.tsx']
-  const dirs = ['pages', 'lib']
-  let files = []
-
-  const ignoreCondition = (item: string) => !isCapableOfBlocks(item, exts)
-
-  for (let dir of dirs) {
-    files = [...files, ...recursiveReadDirSync(dir, ignoreCondition)]
-  }
-
-  let appended_log = []
-  const append = (code: string, { log }: { log?: boolean } = { log: true }) => {
-    const buildRequire = template(code);
-    const ast = buildRequire() as BabelNS.types.Statement
-    path.node.body.push(ast)
-    if (log) appended_log.push(code)
-  }
-
-  console.log("Located API blocks in files:")
-  console.log(files.map(f => ` - ${f}`).join('\n'))
-
-  for (let filename of files) {
-
-    let file = fs.readFileSync(filename)
-    if (!file.includes('includeApiBlocks'))
-      continue
-
-    const filePath = normalize(join(parent.cwd, filename))
-
-    append(`requires = [ ...requires, require("${filePath}").includeApiBlocks ]`)
-
-  }
-
-  console.log("Appended following lines to API endpoint:")
-  console.log(appended_log.map(l => ` ${l}`).join("\n"))
-
-  append(`
-    updateBlocks()
-  `)
-
-  const code = babel.transformFromAstSync(path.node, generate(path.node).code, {
-    ast: true,
-    filename: parse(parent.filename).base,
-    presets: [
-      // 'next/babel',
-      '@babel/preset-react',
-    ],
-    plugins: [],
-  })
-
-  path.node.body = code.ast.program.body
-
-  console.log("")
-}
-
-/**
- * Recursively read directory
- * @param {string[]=[]} arr This doesn't have to be provided, it's used for the recursion
- * @param {string=dir} rootDir Used to replace the initial path, only the relative path is left, it's faster than path.relative.
- * @returns Array holding all relative paths
- */
-export function recursiveReadDirSync(
-  dir: string,
-  ignoreFunc: (item: string) => boolean,
-  arr: string[] = [],
-  rootDir = dir
-): string[] {
-  const result = fs.readdirSync(dir)
-
-  result.forEach((part: string) => {
-    const path = join(dir, part)
-    const pathStat = fs.statSync(path)
-
-    if (pathStat.isDirectory()) {
-      recursiveReadDirSync(path, ignoreFunc, arr, rootDir)
-      return
-    }
-    if (ignoreFunc(path)) return
-    arr.push(path)
-  })
-
-  return arr
-}
 
 const willBeReplacedMark = "willBeReplacedMark";
 

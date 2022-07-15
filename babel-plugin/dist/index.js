@@ -26,13 +26,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.recursiveReadDirSync = void 0;
 const BabelNS = __importStar(require("@babel/core"));
-const core_1 = require("@babel/core");
 const generator_1 = __importDefault(require("@babel/generator"));
 const chalk_1 = __importDefault(require("chalk"));
-const fs = __importStar(require("fs"));
-const path_1 = require("path");
 const isServer = (parent) => parent.file.opts.caller && parent.file.opts.caller['isServer'] === true;
 const isClient = (parent) => !isServer(parent);
 const sideTag = (parent) => chalk_1.default.gray(isServer(parent) ? "[SERVER]" : "[CLIENT]");
@@ -47,35 +43,16 @@ const printCode = ({ header = "", node, parent }) => {
         .join("\n");
     console.log(sideTag(parent), chalk_1.default.cyan(header), '\n' + code + "\n");
 };
-const fromCode = (code, params = {}) => {
-    const buildRequire = (0, core_1.template)(code);
-    const ast = buildRequire(params);
-    return ast;
-};
-const isCapableOfBlocks = (item, exts = [".tsx", ".ts"]) => {
-    const parsed = (0, path_1.parse)(item);
-    if (item.includes('pages/api/block') ||
-        item.includes('lib/helpers/queryToolkit') ||
-        !exts.includes(parsed.ext) ||
-        parsed.dir.includes('lib/plugins') ||
-        parsed.name.startsWith('_'))
-        return false;
-    return true;
-};
 exports.default = (babel) => ({
     visitor: {
         Program: {
             enter(path, parent) {
-                if (parent.filename.includes('pages/api/block')) {
-                    log("Start processing in ", parent);
-                    processBlockApiFound(babel, path, parent);
-                }
                 if (parent.filename.includes('pages/api/')) {
                     log("Joining into an api file", parent);
                     path.traverse({
                         CallExpression(_path) {
                             const callee = _path.node.callee;
-                            if (callee.name !== "createEndpoint")
+                            if (callee.name !== "endpoint")
                                 return;
                             const match = (parent.filename).match(/(?<=\/pages)(.*)(?=\.)/);
                             const url = match ? match[0] : '';
@@ -96,14 +73,6 @@ exports.default = (babel) => ({
                         }
                     });
                 }
-                if (isCapableOfBlocks(parent.filename) && parent.file.code.includes("createApiBlock")) {
-                    log("Creating export of included API blocks", parent);
-                    const buildRequire = (0, core_1.template)(`
-          export const includeApiBlocks = {}
-        `);
-                    path.node.body.push(buildRequire());
-                    // console.log( generate(path.node).code.split("\n").map( (line, index) => `${chalk.yellow(index+1)} | ${line}` ).join("\n"), "\n" )
-                }
             },
             exit: (path, parent) => {
                 if (isClient(parent) && parent.filename.includes('pages/api/')) {
@@ -113,98 +82,8 @@ exports.default = (babel) => ({
                 }
             }
         },
-        CallExpression(path, parent) {
-            if (!parent.filename.includes('pages/') && !parent.filename.includes('lib/'))
-                return;
-            if (parent.filename.startsWith("_"))
-                return;
-            const node = path.node;
-            const callee = node.callee;
-            if (callee.name !== "createApiBlock")
-                return;
-            if (isServer(parent)) {
-                const key = node.arguments[0];
-                const func = node.arguments[1];
-                log("Creating API blocks key", parent);
-                parent.file.path.node.body.push(fromCode(`includeApiBlocks['${key.value}'] = %%func%%`, { func: func }));
-            }
-            else {
-                const func = node.arguments[1];
-                const body = func.body;
-                body.body = [];
-                log("Purged API Blocks in ", parent);
-            }
-        }
     },
 });
-function processBlockApiFound(babel, path, parent) {
-    const blocksDir = (0, path_1.resolve)(parent.cwd, ".dist/api", "blocks");
-    if (!fs.existsSync(blocksDir))
-        fs.mkdirSync(blocksDir);
-    console.log("Loading API blocks\n");
-    const exts = ['.ts', '.tsx'];
-    const dirs = ['pages', 'lib'];
-    let files = [];
-    const ignoreCondition = (item) => !isCapableOfBlocks(item, exts);
-    for (let dir of dirs) {
-        files = [...files, ...recursiveReadDirSync(dir, ignoreCondition)];
-    }
-    let appended_log = [];
-    const append = (code, { log } = { log: true }) => {
-        const buildRequire = (0, core_1.template)(code);
-        const ast = buildRequire();
-        path.node.body.push(ast);
-        if (log)
-            appended_log.push(code);
-    };
-    console.log("Located API blocks in files:");
-    console.log(files.map(f => ` - ${f}`).join('\n'));
-    for (let filename of files) {
-        let file = fs.readFileSync(filename);
-        if (!file.includes('includeApiBlocks'))
-            continue;
-        const filePath = (0, path_1.normalize)((0, path_1.join)(parent.cwd, filename));
-        append(`requires = [ ...requires, require("${filePath}").includeApiBlocks ]`);
-    }
-    console.log("Appended following lines to API endpoint:");
-    console.log(appended_log.map(l => ` ${l}`).join("\n"));
-    append(`
-    updateBlocks()
-  `);
-    const code = babel.transformFromAstSync(path.node, (0, generator_1.default)(path.node).code, {
-        ast: true,
-        filename: (0, path_1.parse)(parent.filename).base,
-        presets: [
-            // 'next/babel',
-            '@babel/preset-react',
-        ],
-        plugins: [],
-    });
-    path.node.body = code.ast.program.body;
-    console.log("");
-}
-/**
- * Recursively read directory
- * @param {string[]=[]} arr This doesn't have to be provided, it's used for the recursion
- * @param {string=dir} rootDir Used to replace the initial path, only the relative path is left, it's faster than path.relative.
- * @returns Array holding all relative paths
- */
-function recursiveReadDirSync(dir, ignoreFunc, arr = [], rootDir = dir) {
-    const result = fs.readdirSync(dir);
-    result.forEach((part) => {
-        const path = (0, path_1.join)(dir, part);
-        const pathStat = fs.statSync(path);
-        if (pathStat.isDirectory()) {
-            recursiveReadDirSync(path, ignoreFunc, arr, rootDir);
-            return;
-        }
-        if (ignoreFunc(path))
-            return;
-        arr.push(path);
-    });
-    return arr;
-}
-exports.recursiveReadDirSync = recursiveReadDirSync;
 const willBeReplacedMark = "willBeReplacedMark";
 const RemoveUnusedAndRemovedRefsImports = ({ path, parent, t }) => {
     const opts = (parent && parent.opts) || {};

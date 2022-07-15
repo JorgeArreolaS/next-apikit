@@ -50,7 +50,7 @@ export declare type successCodeFns<T> = {
 export declare type failureCodeFns<E> = {
     [code in FAILURE_HTTP_CODES]: (data: E extends DefaultError ? string : E) => void;
 };
-export declare type NextMethod<T, P = any, E extends Record<string, any> = DefaultError> = (items: {
+export declare type Method<T, P = any, E extends Record<string, any> = DefaultError> = (items: {
     query: P;
     body: P;
     req: NextApiParamsRequest<PrimitivesMiddleware<P>>;
@@ -63,7 +63,7 @@ export declare type NextMethod<T, P = any, E extends Record<string, any> = Defau
 }) => void;
 export declare type METHODS = 'GET' | 'POST' | 'PUT' | 'DELETE';
 export declare type MethodNextHandlerBase = {
-    [X in METHODS]?: NextMethod<any, any, any>;
+    [X in METHODS]?: Method<any, any, any>;
 } & HandlerRoutesTypeExt;
 export declare type HandlerRoutesTypeExt = {
     routes?: creatorReturn<any>[];
@@ -77,16 +77,16 @@ export declare type getRoutes<H extends HandlerRoutesTypeExt, R extends creatorR
 export declare type RoutesBaseExt<H extends HandlerRoutesTypeExt> = {
     routes?: getRoutes<H>;
 };
-export declare type NextMethodsHandler<Base extends MethodNextHandlerBase> = {
+export declare type ApiMethods<Base extends MethodNextHandlerBase> = {
     [X in keyof Base]?: Base[X];
 };
-export declare type getType<H extends NextMethod<unknown, unknown, unknown>> = H extends NextMethod<infer K, any, any> ? K : any;
-export declare type getParam<H extends NextMethod<unknown, unknown, unknown>> = H extends NextMethod<any, infer K, any> ? K : any;
-export declare type getError<H extends NextMethod<unknown, unknown, unknown>> = H extends NextMethod<any, any, infer K> ? K : any;
+export declare type getType<H extends Method<unknown, unknown, unknown>> = H extends Method<infer K, any, any> ? K : any;
+export declare type getParam<H extends Method<unknown, unknown, unknown>> = H extends Method<any, infer K, any> ? K : any;
+export declare type getError<H extends Method<unknown, unknown, unknown>> = H extends Method<any, any, infer K> ? K : any;
 export declare type IfHasMethod<H extends {
     [x: string]: any;
 }, M extends METHODS, YES extends any, NO extends any = {}> = Required<H> extends {
-    [x in M]: NextMethod<unknown, unknown, unknown>;
+    [x in M]: Method<unknown, unknown, unknown>;
 } ? YES : NO;
 export declare type IfHas<H extends {
     [x: string]: any;
