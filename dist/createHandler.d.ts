@@ -26,14 +26,16 @@ declare type hooksCallerExt<H extends NextMethodsHandler<any>> = {} & IfHasMetho
 }> & IfHasMethod<H, 'DELETE', {
     useDelete: useMutationType<H, "DELETE">;
 }>;
-declare type routesExt<H extends NextMethodsHandler<any>> = {} & IfHas<H, 'routes', {
+declare type routesExt<H extends NextMethodsHandler<any>> = IfHas<H, 'routes', {
     routes: getRoutes<H>;
-}, {}>;
+}, {
+    routes: {};
+}>;
 export declare type creatorReturn<K extends string = string, H extends NextMethodsHandler<any> = {}> = {
     url: string;
     key: K;
     handler: NextApiHandler;
-} & hooksCallerExt<H> & methodsCallerExt<H> & routesExt<H>;
+} & hooksCallerExt<H> & methodsCallerExt<H> & routesExt<H>['routes'];
 declare const createHandler: <key extends string, Bundler extends NextMethodsHandler<any>>(handlers: Bundler & {
     key: key;
 }, url?: string) => creatorReturn<key, Bundler>;

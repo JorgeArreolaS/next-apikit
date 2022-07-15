@@ -70,7 +70,7 @@ export declare type HandlerRoutesTypeExt = {
 };
 declare type getRoutesTypes<l extends creatorReturn[]> = (l extends (infer T)[] ? T : unknown);
 export declare type getRoutes<H extends HandlerRoutesTypeExt, R extends creatorReturn[] = H['routes']> = {
-    [x in getRoutesTypes<R>['key']]: Extract<getRoutesTypes<R>, {
+    [x in getRoutesTypes<R>['key'] as Capitalize<x>]: Extract<getRoutesTypes<R>, {
         key: x;
     }>;
 };

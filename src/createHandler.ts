@@ -1,46 +1,10 @@
-import axios, { AxiosError, AxiosRequestConfig } from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import { NextApiHandler } from 'next';
 import { QueryClient, QueryFunctionContext, useMutation, UseMutationOptions, useQuery, useQueryClient } from 'react-query'
 import { failure_http_codes, success_http_codes } from './http-codes';
-import { NextMethod, PrefetchFn, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, HookFnReturnExt, useMutationOpts, getError, successFn, failFn, DefaultError, queryHookOpts, IfHasMethod, AxiosExt, IfHas, getRoutes, HandlerRoutesTypeExt } from './types'
-import { httpCode } from './utils';
+import { NextMethod, PrefetchFn, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, HookFnReturnExt, useMutationOpts, getError, successFn, failFn, DefaultError, queryHookOpts, IfHasMethod, AxiosExt, IfHas, getRoutes } from './types'
+import { capitalize, catchHandler, httpCode, isServer, parseUrl, queryUrl } from './utils';
 
-let isServer = (typeof window === 'undefined') ? true : false;
-
-const parseUrl = ({ url, query }: { url: string, query: any }) => {
-
-  if (isServer && !url.includes("http"))
-    url = `http://localhost:${process.env.PORT || 3000}` + url
-
-  if (url.endsWith('index'))
-    url = url.replace(/\/index$/, "")
-
-  // If the "query" is just a string, number or boolean
-  // transform it to ?value=query
-  if (['string', 'number', 'boolean'].includes(typeof query))
-    query = { value: query }
-  let params = new URLSearchParams(query).toString()
-
-  if (params) return url + '?' + params
-
-  return url
-}
-
-const catchHandler = <T = any>(err: AxiosError<T>) => {
-  let data: T | DefaultError = err.response.data
-  if (typeof data == 'string') {
-    const default_error: DefaultError = {
-      message: data
-    }
-    data = default_error
-  }
-  throw {
-    code: err.code,
-    status: err.response.status,
-    statusText: err.response.statusText,
-    ...data,
-  }
-}
 
 type RequestConfig<T> = AxiosRequestConfig<T> & { query?: T } & AxiosExt
 
@@ -66,9 +30,8 @@ type hooksCallerExt<H extends NextMethodsHandler<any>> = {}
   & IfHasMethod<H, 'POST', { usePost: useMutationType<H, "POST">, }>
   & IfHasMethod<H, 'DELETE', { useDelete: useMutationType<H, "DELETE">, }>
 
-type routesExt<H extends NextMethodsHandler<any>> = {}
-  & IfHas<H, 'routes', { routes: getRoutes<H> }, {}>
-// & IfHas<H, 'routes', { routes: getRoutes< H['routes'] > }, {}>
+type routesExt<H extends NextMethodsHandler<any>> = 
+  IfHas<H, 'routes', { routes: getRoutes<H> }, { routes: {} }>
 
 export type creatorReturn<K extends string = string, H extends NextMethodsHandler<any> = {}> = {
   url: string
@@ -76,7 +39,7 @@ export type creatorReturn<K extends string = string, H extends NextMethodsHandle
   handler: NextApiHandler
 } & hooksCallerExt<H>
   & methodsCallerExt<H>
-  & routesExt<H>
+  & routesExt<H>['routes']
 
 
 const createHandler: <
@@ -88,9 +51,10 @@ const createHandler: <
   url?: string,
 ) => creatorReturn<key, Bundler>
 
-  = (payload, url = "/") => {
+  = (payload, _url = "/") => {
 
     const { key, routes, ..._handler } = payload
+    const url = parseUrl(_url)
 
     const res: any = {
       url, key,
@@ -101,7 +65,7 @@ const createHandler: <
     const get: method = async (_query, config = {}) => {
       const query = Object.assign({}, config.query, _query)
       const client = config.axios || axios
-      return await client.get(parseUrl({ url, query }), config)
+      return await client.get(queryUrl({ url, query }), config)
         .then(res => res.data)
         .catch(catchHandler)
     }
@@ -110,7 +74,7 @@ const createHandler: <
     const put: method = async (data, config = {}) => {
       const query = Object.assign({}, config.query)
       const client = config.axios || axios
-      return await client.put(parseUrl({ url, query }), data, config)
+      return await client.put(queryUrl({ url, query }), data, config)
         .then(res => res.data)
         .catch(catchHandler)
     }
@@ -119,7 +83,7 @@ const createHandler: <
     const post: method = async (data, config = {}) => {
       const query = Object.assign({}, config.query)
       const client = config.axios || axios
-      return await client.post(parseUrl({ url, query }), data, config)
+      return await client.post(queryUrl({ url, query }), data, config)
         .then(res => res.data)
         .catch(catchHandler)
     }
@@ -128,7 +92,7 @@ const createHandler: <
     const m_delete: method = async (data, config = {}) => {
       const query = Object.assign({}, config.query)
       const client = config.axios || axios
-      return await client.delete(parseUrl({ url, query }), { data, ...config })
+      return await client.delete(queryUrl({ url, query }), { data, ...config })
         .then(res => res.data)
         .catch(catchHandler)
     }
@@ -228,10 +192,14 @@ const createHandler: <
         res: res as any
       })
     }
-    res['handler'] = handler
+    if( isServer )
+      res['handler'] = handler
 
     if (routes && routes.length > 0) {
-      res['routes'] = Object.fromEntries(routes.map( (r:any) => ([r.key, r])))
+      ( routes as creatorReturn<any>[] ).forEach( r => {
+        const key = capitalize(r.key)
+        res[key] = r
+      })
     }
 
     // console.log(res)

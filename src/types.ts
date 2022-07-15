@@ -92,7 +92,7 @@ export type NextMethod<
     fail: failFn<E>
   }) => void
 
-type a = NextMethod<{ name: string }, {id: string}, { msg: string }>
+// type a = NextMethod<{ name: string }, {id: string}, { msg: string }>
 
 export type METHODS = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
@@ -106,8 +106,11 @@ export type HandlerRoutesTypeExt = {
 
 type getRoutesTypes<l extends creatorReturn[]> = (l extends (infer T)[] ? T : unknown)
 
-export type getRoutes<H extends HandlerRoutesTypeExt, R extends creatorReturn[] = H['routes']> = {
-  [x in getRoutesTypes<R>['key']]: Extract<getRoutesTypes<R>, { key: x }>
+export type getRoutes<
+  H extends HandlerRoutesTypeExt,
+  R extends creatorReturn[] = H['routes']
+> = {
+  [x in getRoutesTypes<R>['key'] as Capitalize<x>]: Extract<getRoutesTypes<R>, { key: x }>
 }
 
 export type RoutesBaseExt<H extends HandlerRoutesTypeExt> = {
