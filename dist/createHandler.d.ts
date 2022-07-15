@@ -1,6 +1,6 @@
 import { AxiosRequestConfig } from 'axios';
 import { NextApiHandler } from 'next';
-import { PrefetchFn, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, getError, IfHasMethod, AxiosExt } from './types';
+import { PrefetchFn, queryObjectHookFn, useMutationFn, NextMethodsHandler, MethodNextHandlerBase, getParam, getType, METHODS, getError, IfHasMethod, AxiosExt, IfHas, getRoutes } from './types';
 declare type RequestConfig<T> = AxiosRequestConfig<T> & {
     query?: T;
 } & AxiosExt;
@@ -26,12 +26,15 @@ declare type hooksCallerExt<H extends NextMethodsHandler<any>> = {} & IfHasMetho
 }> & IfHasMethod<H, 'DELETE', {
     useDelete: useMutationType<H, "DELETE">;
 }>;
-declare const createHandler: <Handler extends NextMethodsHandler<any> = NextMethodsHandler<{}>>(handlers: Handler, url?: string) => {
-    handler: NextApiHandler;
+declare type routesExt<H extends NextMethodsHandler<any>> = {} & IfHas<H, 'routes', {
+    routes: getRoutes<H>;
+}, {}>;
+export declare type creatorReturn<K extends string = string, H extends NextMethodsHandler<any> = {}> = {
     url: string;
-    buildReactQuery: (key: string, config?: RequestConfig<getParam<Handler['GET']>>) => {
-        url: string;
-        key: string;
-    } & hooksCallerExt<Handler>;
-} & methodsCallerExt<Handler>;
+    key: K;
+    handler: NextApiHandler;
+} & hooksCallerExt<H> & methodsCallerExt<H> & routesExt<H>;
+declare const createHandler: <key extends string, Bundler extends NextMethodsHandler<any>>(handlers: Bundler & {
+    key: key;
+}, url?: string) => creatorReturn<key, Bundler>;
 export { createHandler };

@@ -9,13 +9,14 @@ var _axios = _interopRequireDefault(require("axios"));
 
 var _reactQuery = require("react-query");
 
-var _excluded = ["config", "axios"];
+var _httpCodes = require("./http-codes");
+
+var _utils = require("./utils");
+
+var _excluded = ["key", "routes"],
+    _excluded2 = ["config", "axios"];
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
-
-function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
 
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
 
@@ -34,6 +35,10 @@ function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyri
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
+function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
+
+function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 
@@ -77,8 +82,17 @@ var catchHandler = function catchHandler(err) {
   }, data);
 };
 
-var createHandler = function createHandler(_handler) {
+var createHandler = function createHandler(payload) {
   var url = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "/";
+
+  var key = payload.key,
+      routes = payload.routes,
+      _handler = _objectWithoutProperties(payload, _excluded);
+
+  var res = {
+    url: url,
+    key: key
+  };
 
   var get = /*#__PURE__*/function () {
     var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(_query) {
@@ -117,6 +131,8 @@ var createHandler = function createHandler(_handler) {
     };
   }();
 
+  res['get'] = get;
+
   var put = /*#__PURE__*/function () {
     var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(data) {
       var config,
@@ -154,6 +170,8 @@ var createHandler = function createHandler(_handler) {
     };
   }();
 
+  res['put'] = put;
+
   var post = /*#__PURE__*/function () {
     var _ref4 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(data) {
       var config,
@@ -190,6 +208,8 @@ var createHandler = function createHandler(_handler) {
       return _ref4.apply(this, arguments);
     };
   }();
+
+  res['post'] = post;
 
   var m_delete = /*#__PURE__*/function () {
     var _ref5 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(data) {
@@ -230,126 +250,123 @@ var createHandler = function createHandler(_handler) {
     };
   }();
 
-  var buildReactQuery = function buildReactQuery(key) {
-    var general_config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    var res = {
-      key: key,
-      url: url
-    };
+  res['delete'] = m_delete;
 
-    if ('GET' in _handler) {
-      var createQueryHandler = function createQueryHandler() {
-        var added_config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-        var config = Object.assign(general_config, added_config);
-        return /*#__PURE__*/function () {
-          var _ref7 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(_ref6) {
-            var _ref6$queryKey, _key, query;
+  if ('GET' in _handler) {
+    var createQueryHandler = function createQueryHandler() {
+      var added_config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      var config = Object.assign(added_config);
+      return /*#__PURE__*/function () {
+        var _ref7 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(_ref6) {
+          var _ref6$queryKey, _key, query;
 
-            return _regeneratorRuntime().wrap(function _callee5$(_context5) {
-              while (1) {
-                switch (_context5.prev = _context5.next) {
-                  case 0:
-                    _ref6$queryKey = _slicedToArray(_ref6.queryKey, 2), _key = _ref6$queryKey[0], query = _ref6$queryKey[1];
-                    _context5.next = 3;
-                    return get(query, config);
+          return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+            while (1) {
+              switch (_context5.prev = _context5.next) {
+                case 0:
+                  _ref6$queryKey = _slicedToArray(_ref6.queryKey, 2), _key = _ref6$queryKey[0], query = _ref6$queryKey[1];
+                  _context5.next = 3;
+                  return get(query, config);
 
-                  case 3:
-                    return _context5.abrupt("return", _context5.sent);
+                case 3:
+                  return _context5.abrupt("return", _context5.sent);
 
-                  case 4:
-                  case "end":
-                    return _context5.stop();
-                }
+                case 4:
+                case "end":
+                  return _context5.stop();
               }
-            }, _callee5);
-          }));
-
-          return function (_x5) {
-            return _ref7.apply(this, arguments);
-          };
-        }();
-      };
-
-      var _useQuery = function _useQuery(params, _opts) {
-        var config = _opts.config,
-            axios = _opts.axios,
-            opts = _objectWithoutProperties(_opts, _excluded);
-
-        var res = (0, _reactQuery.useQuery)([key, params], createQueryHandler(_objectSpread(_objectSpread({}, config), {}, {
-          axios: axios
-        })), opts);
-        var queryClient = (0, _reactQuery.useQueryClient)();
-        var ext = {
-          invalidate: function invalidate() {
-            return queryClient.invalidateQueries(key);
-          }
-        };
-        return _objectSpread(_objectSpread({}, ext), res);
-      };
-
-      var prefetch = function prefetch(params) {
-        var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-        return /*#__PURE__*/function () {
-          var _ref8 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(queryClient) {
-            return _regeneratorRuntime().wrap(function _callee6$(_context6) {
-              while (1) {
-                switch (_context6.prev = _context6.next) {
-                  case 0:
-                    _context6.next = 2;
-                    return queryClient.prefetchQuery([key, params], createQueryHandler(config));
-
-                  case 2:
-                    return _context6.abrupt("return", _context6.sent);
-
-                  case 3:
-                  case "end":
-                    return _context6.stop();
-                }
-              }
-            }, _callee6);
-          }));
-
-          return function (_x6) {
-            return _ref8.apply(this, arguments);
-          };
-        }();
-      };
-
-      res['useGet'] = _useQuery;
-      res['prefetch'] = prefetch;
-    }
-
-    var _useMutation = function _useMutation(methodFn) {
-      return function (opts) {
-        var onSuccess = function onSuccess(data, vars, cxt) {
-          if (opts.invalidate) opts.invalidate.forEach(function (query) {
-            return query.invalidate();
-          });
-          if (opts.onSuccess) opts.onSuccess(data, vars, cxt);
-        };
-
-        var methodHandler = function methodHandler(data) {
-          return methodFn(data, _objectSpread(_objectSpread({}, opts.config), {}, {
-            axios: opts.axios
-          }));
-        };
-
-        var res = (0, _reactQuery.useMutation)(methodHandler, _objectSpread(_objectSpread({}, opts), {}, {
-          onSuccess: onSuccess
+            }
+          }, _callee5);
         }));
-        return [res.mutateAsync, res];
-      };
+
+        return function (_x5) {
+          return _ref7.apply(this, arguments);
+        };
+      }();
     };
 
-    if ('POST' in _handler) res['usePost'] = _useMutation(post);
-    if ('PUT' in _handler) res['usePut'] = _useMutation(put);
-    if ('DELETE' in _handler) res['useDelete'] = _useMutation(m_delete);
-    return res;
+    var _useQuery = function _useQuery(params, _opts) {
+      var config = _opts.config,
+          axios = _opts.axios,
+          opts = _objectWithoutProperties(_opts, _excluded2);
+
+      var res = (0, _reactQuery.useQuery)([key, params], createQueryHandler(_objectSpread(_objectSpread({}, config), {}, {
+        axios: axios
+      })), opts);
+      var queryClient = (0, _reactQuery.useQueryClient)();
+      var ext = {
+        invalidate: function invalidate() {
+          return queryClient.invalidateQueries(key);
+        }
+      };
+      return _objectSpread(_objectSpread({}, ext), res);
+    };
+
+    var prefetch = function prefetch(params) {
+      var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      return /*#__PURE__*/function () {
+        var _ref8 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(queryClient) {
+          return _regeneratorRuntime().wrap(function _callee6$(_context6) {
+            while (1) {
+              switch (_context6.prev = _context6.next) {
+                case 0:
+                  _context6.next = 2;
+                  return queryClient.prefetchQuery([key, params], createQueryHandler(config));
+
+                case 2:
+                  return _context6.abrupt("return", _context6.sent);
+
+                case 3:
+                case "end":
+                  return _context6.stop();
+              }
+            }
+          }, _callee6);
+        }));
+
+        return function (_x6) {
+          return _ref8.apply(this, arguments);
+        };
+      }();
+    };
+
+    res['useGet'] = _useQuery;
+    res['prefetch'] = prefetch;
+  }
+
+  var _useMutation = function _useMutation(methodFn) {
+    return function (opts) {
+      var onSuccess = function onSuccess(data, vars, cxt) {
+        if (opts.invalidate) opts.invalidate.forEach(function (query) {
+          return query.invalidate();
+        });
+        if (opts.onSuccess) opts.onSuccess(data, vars, cxt);
+      };
+
+      var methodHandler = function methodHandler(data) {
+        return methodFn(data, _objectSpread(_objectSpread({}, opts.config), {}, {
+          axios: opts.axios
+        }));
+      };
+
+      var res = (0, _reactQuery.useMutation)(methodHandler, _objectSpread(_objectSpread({}, opts), {}, {
+        onSuccess: onSuccess
+      }));
+      return [res.mutateAsync, res];
+    };
   };
+
+  if ('POST' in _handler) res['usePost'] = _useMutation(post);
+  if ('PUT' in _handler) res['usePut'] = _useMutation(put);
+  if ('DELETE' in _handler) res['useDelete'] = _useMutation(m_delete);
 
   var handler = function handler(req, res) {
     // console.log("Method", req.method, "called to", req.url)
     var fn = _handler[String(req.method).toUpperCase()];
+
+    console.log({
+      _handler: _handler
+    });
 
     if (!fn) {
       return res.status(405).send({
@@ -358,7 +375,7 @@ var createHandler = function createHandler(_handler) {
     }
 
     var success = function success(statusCode, data) {
-      return res.status(statusCode).json(data);
+      return res.status((0, _utils.httpCode)(statusCode)).json(data);
     };
 
     var fail = function fail(statusCode, err) {
@@ -366,14 +383,35 @@ var createHandler = function createHandler(_handler) {
         var default_error = {
           message: err
         };
-        return res.status(statusCode).json(default_error);
+        return res.status((0, _utils.httpCode)(statusCode)).json(default_error);
       }
 
-      return res.status(statusCode).json(err);
+      return res.status((0, _utils.httpCode)(statusCode)).json(err);
     };
 
     res['success'] = success;
     res['fail'] = success;
+
+    var _loop = function _loop(CODE) {
+      res[CODE] = function (data) {
+        return success(_httpCodes.success_http_codes[CODE], data);
+      };
+    };
+
+    for (var CODE in _httpCodes.success_http_codes) {
+      _loop(CODE);
+    }
+
+    var _loop2 = function _loop2(_CODE) {
+      res[_CODE] = function (err) {
+        return fail(_httpCodes.failure_http_codes[_CODE], err);
+      };
+    };
+
+    for (var _CODE in _httpCodes.failure_http_codes) {
+      _loop2(_CODE);
+    }
+
     return fn({
       body: req.body,
       query: req.query,
@@ -384,15 +422,16 @@ var createHandler = function createHandler(_handler) {
     });
   };
 
-  return {
-    handler: handler,
-    url: url,
-    get: get,
-    post: post,
-    put: put,
-    "delete": m_delete,
-    buildReactQuery: buildReactQuery
-  };
+  res['handler'] = handler;
+
+  if (routes && routes.length > 0) {
+    res['routes'] = Object.fromEntries(routes.map(function (r) {
+      return [r.key, r];
+    }));
+  } // console.log(res)
+
+
+  return res;
 };
 
 exports.createHandler = createHandler;

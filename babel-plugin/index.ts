@@ -79,6 +79,10 @@ export default (babel: Babel): PluginObj => ({
                 // console.log(obj)
                	const props = obj.get("properties") as Node[]
                	props.forEach( p => {
+                    const k = p.get("key") as BabelNS.NodePath<BabelNS.types.Identifier>
+                  	if (['key', 'routes'].includes(k.node.name))
+                      return
+
                   	const v = p.get("value") as Node
                     v[willBeReplacedMark] = true;
                     v.replaceWithSourceString('()=>{}')

@@ -85,6 +85,9 @@ exports.default = (babel) => ({
                                 // console.log(obj)
                                 const props = obj.get("properties");
                                 props.forEach(p => {
+                                    const k = p.get("key");
+                                    if (['key', 'routes'].includes(k.node.name))
+                                        return;
                                     const v = p.get("value");
                                     v[willBeReplacedMark] = true;
                                     v.replaceWithSourceString('()=>{}');
