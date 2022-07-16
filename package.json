@@ -1,6 +1,6 @@
 {
   "name": "next-apikit",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,7 @@
   "scripts": {
     "build": "npm run babel && tsc --emitDeclarationOnly && rm ./dist/tsconfig.tsbuildinfo && tsc --project ./babel-plugin/tsconfig.json",
     "babel": "babel src -d dist --extensions '.ts,.tsx'",
-    "test":" echo 'No test setup'"
+    "test": " echo 'No test setup'"
   },
   "keywords": [],
   "author": "",
