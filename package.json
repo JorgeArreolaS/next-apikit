@@ -1,7 +1,8 @@
 {
   "name": "next-apikit",
   "version": "3.0.0",
-  "description": "",
+  "description": "Kit to create and handle Nextjs api endpoints with axios & reactquery",
+  "repository": "https://github.com/JorgeArreolaS/next-apikit", 
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -13,8 +14,8 @@
     "babel": "babel src -d dist --extensions '.ts,.tsx'",
     "test": " echo 'No test setup'"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["next.js", "api", "react-query", "babel", "babel plugin"],
+  "author": "Jorge Arreola",
   "license": "ISC",
   "devDependencies": {
     "@babel/cli": "^7.18.6",
