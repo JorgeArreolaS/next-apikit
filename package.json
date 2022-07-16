@@ -6,11 +6,12 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist/",
-    "babel-plugin/dist"
+    "babel-plugin/dist/"
   ],
   "scripts": {
     "build": "npm run babel && tsc --emitDeclarationOnly && rm ./dist/tsconfig.tsbuildinfo && tsc --project ./babel-plugin/tsconfig.json",
-    "babel": "babel src -d dist --extensions '.ts,.tsx'"
+    "babel": "babel src -d dist --extensions '.ts,.tsx'",
+    "test":" echo 'No test setup'"
   },
   "keywords": [],
   "author": "",
