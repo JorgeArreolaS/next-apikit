@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist/"
+    "dist/",
+    "babel-plugin/dist"
   ],
   "scripts": {
     "build": "npm run babel && tsc --emitDeclarationOnly && rm ./dist/tsconfig.tsbuildinfo && tsc --project ./babel-plugin/tsconfig.json",
