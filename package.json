@@ -1,6 +1,6 @@
 {
   "name": "next-apikit",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Kit to create and handle Nextjs api endpoints with axios & reactquery",
   "repository": "https://github.com/JorgeArreolaS/next-apikit",
   "main": "dist/index.js",
@@ -37,12 +37,11 @@
     "next": "^12.2.2",
     "typescript": "^4.7.4"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "peerDependencies": {
     "chalk": "^4.1.2",
     "axios": "^0.27.2",
-    "react": "^18.2.0",
+    "react": "^18.0.0",
     "react-query": "^3.39.0"
   }
 }
