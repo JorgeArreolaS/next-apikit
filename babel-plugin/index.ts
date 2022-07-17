@@ -87,7 +87,8 @@ export default (babel: Babel): PluginObj => ({
       exit: (path, parent) => {
         if (isClient(parent) && parent.filename.includes('pages/api/')) {
           RemoveUnusedAndRemovedRefsImports({ path, parent, t: babel.types });
-          printCode({ parent, header: "After removed:" })
+          if( parent.opts['printClientCode'] )
+            printCode({ parent, header: "After removed:" })
         }
       }
     },
