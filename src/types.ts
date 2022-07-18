@@ -34,7 +34,7 @@ export type queryObjectHookFn<T, P> = (params: P, opts: queryHookOpts<T, P>) => 
 // Mutations section
 
 export type useMutationOptsExt<P> = {
-  invalidate?: queryHookReturnType<any>[]
+  invalidate?: ( queryHookReturnType<any> | creatorReturn<any> )[]
   config?: AxiosRequestConfig<P>
 } & AxiosExt
 export type useMutationReturnExt = {
@@ -77,8 +77,8 @@ export type failureCodeFns<E> = {
 }
 
 export type Method<
-  T,
   P = any,
+  T = any,
   E extends Record<string, any> = DefaultError
   > = (items: {
     query: P
@@ -121,8 +121,8 @@ export type ApiMethods<Base extends MethodNextHandlerBase> = {
   [X in keyof Base]?: Base[X]
 }
 
-export type getType<H extends Method<unknown, unknown, unknown>> = H extends Method<infer K, any, any> ? K : any
-export type getParam<H extends Method<unknown, unknown, unknown>> = H extends Method<any, infer K, any> ? K : any
+export type getParam<H extends Method<unknown, unknown, unknown>> = H extends Method<infer K, any, any> ? K : any
+export type getType<H extends Method<unknown, unknown, unknown>> = H extends Method<any, infer K, any> ? K : any
 export type getError<H extends Method<unknown, unknown, unknown>> = H extends Method<any, any, infer K> ? K : any
 
 export type IfHasMethod<

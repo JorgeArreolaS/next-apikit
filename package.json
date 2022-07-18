@@ -1,6 +1,6 @@
 {
   "name": "next-apikit",
-  "version": "3.1.2",
+  "version": "3.1.3",
   "description": "Kit to create and handle Nextjs api endpoints with axios & reactquery",
   "repository": "https://github.com/JorgeArreolaS/next-apikit",
   "main": "dist/index.js",

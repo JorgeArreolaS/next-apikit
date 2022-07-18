@@ -303,10 +303,16 @@ var endpoint = function endpoint(payload) {
 
   var _useMutation = function _useMutation(methodFn) {
     return function (opts) {
+      var queryClient = (0, _reactQuery.useQueryClient)();
+
       var onSuccess = function onSuccess(data, vars, cxt) {
-        if (opts.invalidate) opts.invalidate.forEach(function (query) {
-          return query.invalidate();
-        });
+        if (opts.invalidate) {
+          opts.invalidate.forEach(function (query) {
+            if ("key" in query) queryClient.invalidateQueries(query.key);
+            if ("invalidate" in query) query.invalidate();
+          });
+        }
+
         if (opts.onSuccess) opts.onSuccess(data, vars, cxt);
       };
 

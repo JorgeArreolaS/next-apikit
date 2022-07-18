@@ -135,9 +135,17 @@ const endpoint: <
     }
 
     const _useMutation = (methodFn: any) => (opts: useMutationOpts<any, any, any>) => {
+      const queryClient = useQueryClient()
+
       const onSuccess: UseMutationOptions<any>['onSuccess'] = ((data, vars, cxt) => {
-        if (opts.invalidate)
-          opts.invalidate.forEach(query => query.invalidate())
+        if (opts.invalidate){
+          opts.invalidate.forEach( query => {
+            if ( "key" in query )
+              queryClient.invalidateQueries( query.key )
+            if ( "invalidate" in query )
+              query.invalidate() 
+          })
+        }
 
         if (opts.onSuccess)
           opts.onSuccess(data, vars, cxt)

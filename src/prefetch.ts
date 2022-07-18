@@ -1,7 +1,9 @@
 import { GetServerSideProps } from 'next'
 import { dehydrate, QueryClient } from 'react-query'
 
-export const apiPrefetch = async (queries: Array<(queryClient: QueryClient) => Promise<void>>) => {
+export const apiPrefetch = async (
+  queries: Array< (queryClient: QueryClient) => Promise<void>  >
+) => {
 
   const queryClient = new QueryClient()
 

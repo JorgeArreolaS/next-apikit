@@ -23,7 +23,7 @@ export declare type queryHookOpts<T, P> = UseQueryOptions<T, Error, T, [string, 
 export declare type queryHookFn<T, P> = (params: P, opts: queryHookOpts<T, P>) => [T, queryHookReturnType<T>];
 export declare type queryObjectHookFn<T, P> = (params: P, opts: queryHookOpts<T, P>) => queryHookReturnType<T>;
 export declare type useMutationOptsExt<P> = {
-    invalidate?: queryHookReturnType<any>[];
+    invalidate?: (queryHookReturnType<any> | creatorReturn<any>)[];
     config?: AxiosRequestConfig<P>;
 } & AxiosExt;
 export declare type useMutationReturnExt = {};
@@ -50,7 +50,7 @@ export declare type successCodeFns<T> = {
 export declare type failureCodeFns<E> = {
     [code in FAILURE_HTTP_CODES]: (data: E extends DefaultError ? string : E) => void;
 };
-export declare type Method<T, P = any, E extends Record<string, any> = DefaultError> = (items: {
+export declare type Method<P = any, T = any, E extends Record<string, any> = DefaultError> = (items: {
     query: P;
     body: P;
     req: NextApiParamsRequest<PrimitivesMiddleware<P>>;
@@ -80,8 +80,8 @@ export declare type RoutesBaseExt<H extends HandlerRoutesTypeExt> = {
 export declare type ApiMethods<Base extends MethodNextHandlerBase> = {
     [X in keyof Base]?: Base[X];
 };
-export declare type getType<H extends Method<unknown, unknown, unknown>> = H extends Method<infer K, any, any> ? K : any;
-export declare type getParam<H extends Method<unknown, unknown, unknown>> = H extends Method<any, infer K, any> ? K : any;
+export declare type getParam<H extends Method<unknown, unknown, unknown>> = H extends Method<infer K, any, any> ? K : any;
+export declare type getType<H extends Method<unknown, unknown, unknown>> = H extends Method<any, infer K, any> ? K : any;
 export declare type getError<H extends Method<unknown, unknown, unknown>> = H extends Method<any, any, infer K> ? K : any;
 export declare type IfHasMethod<H extends {
     [x: string]: any;
